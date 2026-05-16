@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // income | expense
+  color     String
+  icon      String   @default("circle")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@map("categories")
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  type       String   // income | expense
+  amount     Int
+  memo       String   @default("")
+  date       DateTime
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([date])
+  @@index([categoryId])
+  @@map("transactions")
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  amount     Int
+  month      String   // YYYY-MM
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([categoryId, month])
+  @@map("budgets")
+}

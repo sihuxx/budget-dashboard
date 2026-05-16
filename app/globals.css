@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f6f3;
+  --bg-tertiary: #efedea;
+  --tx-primary: #1a1a19;
+  --tx-secondary: #6b6a65;
+  --tx-tertiary: #9c9b95;
+  --accent: #2d5a27;
+  --accent-light: #e8f0e6;
+  --accent-muted: #4a8c42;
+  --income: #2563eb;
+  --expense: #dc2626;
+  --border-color: rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --bg-primary: #161615;
+  --bg-secondary: #1e1e1c;
+  --bg-tertiary: #2a2a27;
+  --tx-primary: #e8e6e1;
+  --tx-secondary: #9c9b95;
+  --tx-tertiary: #6b6a65;
+  --accent: #6fcf63;
+  --accent-light: #1a2e18;
+  --accent-muted: #4a8c42;
+  --income: #60a5fa;
+  --expense: #f87171;
+  --border-color: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--tx-primary);
+  font-family: "Pretendard Variable", "Pretendard", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
