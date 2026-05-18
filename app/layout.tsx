@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Sidebar from "@/components/Sidebar";
+import { SessionProvider } from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
   title: "Cashbook — 나의 가계부",
@@ -16,12 +17,14 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <body>
-        <ThemeProvider>
-          <Sidebar />
-          <main className="md:ml-[220px] min-h-screen pb-20 md:pb-0">
-            {children}
-          </main>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            <Sidebar />
+            <main className="md:ml-[220px] min-h-screen pb-20 md:pb-0">
+              {children}
+            </main>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

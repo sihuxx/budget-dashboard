@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@map("users")
+}
+
 model Category {
   id        String   @id @default(cuid())
   name      String
@@ -14,6 +28,8 @@ model Category {
   color     String
   icon      String   @default("circle")
   isDefault Boolean  @default(false)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   transactions Transaction[]
@@ -30,11 +46,14 @@ model Transaction {
   date       DateTime
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([date])
   @@index([categoryId])
+  @@index([userId])
   @@map("transactions")
 }
 
@@ -44,9 +63,11 @@ model Budget {
   month      String   // YYYY-MM
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([categoryId, month])
+  @@unique([categoryId, month, userId])
   @@map("budgets")
 }

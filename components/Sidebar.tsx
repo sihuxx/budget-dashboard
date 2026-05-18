@@ -10,8 +10,10 @@ import {
   Moon,
   Sun,
   Monitor,
+  LogOut,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
+import { useSession, signOut } from "next-auth/react";
 
 const NAV_ITEMS = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
@@ -23,6 +25,7 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
 
   const themeOptions: { value: "light" | "dark" | "system"; icon: typeof Sun }[] = [
     { value: "light", icon: Sun },
@@ -30,12 +33,21 @@ export default function Sidebar() {
     { value: "system", icon: Monitor },
   ];
 
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/login" });
+  };
+
   return (
     <>
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[220px] flex-col bg-bg-secondary border-r border-border z-50">
         <div className="p-6 pb-2">
           <h1 className="font-display text-2xl italic text-accent">Cashbook</h1>
           <p className="text-xs text-tx-tertiary mt-0.5">나의 가계부</p>
+          {session?.user && (
+            <p className="text-xs text-tx-secondary mt-2 truncate">
+              {session.user.email}
+            </p>
+          )}
         </div>
 
         <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
@@ -58,7 +70,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border space-y-3">
           <div className="flex bg-bg-tertiary rounded-lg p-1 gap-0.5">
             {themeOptions.map((opt) => (
               <button
@@ -75,6 +87,16 @@ export default function Sidebar() {
               </button>
             ))}
           </div>
+
+          {session && (
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm text-tx-secondary hover:text-tx-primary hover:bg-bg-tertiary transition-all"
+            >
+              <LogOut size={16} />
+              로그아웃
+            </button>
+          )}
         </div>
       </aside>
 
