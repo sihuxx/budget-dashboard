@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
@@ -15,7 +22,10 @@ export async function GET(req: NextRequest) {
   const endDate = new Date(end);
 
   const transactions = await prisma.transaction.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: { 
+      date: { gte: startDate, lte: endDate },
+      userId: session.user.id,
+    },
     include: { category: true },
     orderBy: { date: "desc" },
   });
@@ -39,7 +49,10 @@ export async function GET(req: NextRequest) {
     monthlyLabels.push(format(m, "M월"));
 
     const mTx = await prisma.transaction.findMany({
-      where: { date: { gte: mStart, lte: mEnd } },
+      where: { 
+        date: { gte: mStart, lte: mEnd },
+        userId: session.user.id,
+      },
     });
 
     monthlyIncome.push(

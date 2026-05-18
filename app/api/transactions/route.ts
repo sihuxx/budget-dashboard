@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
   const type = searchParams.get("type");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { userId: session.user.id };
   if (start && end) {
     where.date = { gte: new Date(start), lte: new Date(end) };
   }
@@ -30,6 +37,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const transaction = await prisma.transaction.create({
     data: {
@@ -38,6 +50,7 @@ export async function POST(req: NextRequest) {
       memo: body.memo || "",
       date: new Date(body.date),
       categoryId: body.categoryId,
+      userId: session.user.id,
     },
     include: { category: true },
   });
@@ -51,9 +64,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const transaction = await prisma.transaction.update({
-    where: { id: body.id },
+    where: { id: body.id, userId: session.user.id },
     data: {
       type: body.type,
       amount: Number(body.amount),
@@ -73,10 +91,15 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  await prisma.transaction.delete({ where: { id } });
+  await prisma.transaction.delete({ where: { id, userId: session.user.id } });
   return NextResponse.json({ success: true });
 }

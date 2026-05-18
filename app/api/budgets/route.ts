@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const month = searchParams.get("month");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { userId: session.user.id };
   if (month) where.month = month;
 
   const budgets = await prisma.budget.findMany({
@@ -24,6 +31,7 @@ export async function GET(req: NextRequest) {
       where: {
         type: "expense",
         date: { gte: startDate, lt: endDate },
+        userId: session.user.id,
       },
       _sum: { amount: true },
     });
@@ -44,12 +52,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const body = await req.json();
   const budget = await prisma.budget.upsert({
     where: {
-      categoryId_month: {
+      categoryId_month_userId: {
         categoryId: body.categoryId,
         month: body.month,
+        userId: session.user.id,
       },
     },
     update: { amount: Number(body.amount) },
@@ -57,6 +71,7 @@ export async function POST(req: NextRequest) {
       categoryId: body.categoryId,
       month: body.month,
       amount: Number(body.amount),
+      userId: session.user.id,
     },
     include: { category: true },
   });
@@ -64,10 +79,15 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-  await prisma.budget.delete({ where: { id } });
+  await prisma.budget.delete({ where: { id, userId: session.user.id } });
   return NextResponse.json({ success: true });
 }
