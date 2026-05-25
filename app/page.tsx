@@ -15,14 +15,17 @@ import { Line } from "react-chartjs-2";
 import PeriodSelector from "@/components/PeriodSelector";
 import TransactionModal from "@/components/TransactionModal";
 import ExternalDataWidget from "@/components/ExternalDataWidget";
+import WidgetCustomizer from "@/components/WidgetCustomizer";
 import { getPeriodRange, formatCurrency, formatDate } from "@/lib/date-utils";
 import type { PeriodFilter, DashboardSummary, CategoryData, TransactionData } from "@/lib/types";
 import { useTheme } from "@/components/ThemeProvider";
+import { useWidgetSettings } from "@/lib/useWidgetSettings";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 export default function DashboardPage() {
   const { isDark } = useTheme();
+  const { widgets, toggleWidget, moveWidget, resetWidgets, loaded } = useWidgetSettings();
   const [period, setPeriod] = useState<PeriodFilter>("month");
   const [reference, setReference] = useState(new Date());
   const [data, setData] = useState<DashboardSummary | null>(null);
@@ -141,45 +144,12 @@ export default function DashboardPage() {
     },
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse text-tx-tertiary">불러오는 중...</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="font-display text-3xl italic text-tx-primary">Dashboard</h1>
-          <p className="text-sm text-tx-tertiary mt-1">한눈에 보는 재정 현황</p>
-        </div>
-        <button
-          onClick={() => setModalOpen(true)}
-          className="flex items-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus size={16} />
-          내역 추가
-        </button>
-      </div>
-
-      <div className="mb-6">
-        <PeriodSelector
-          period={period}
-          reference={reference}
-          onPeriodChange={setPeriod}
-          onReferenceChange={setReference}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+  // 위젯 렌더링 맵
+  const widgetMap: Record<string, React.ReactNode> = {
+    summary: (
+      <div key="summary" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
         {summaryCards.map((card) => (
-          <div
-            key={card.label}
-            className={`${card.bg} rounded-xl p-4 border border-border`}
-          >
+          <div key={card.label} className={`${card.bg} rounded-xl p-4 border border-border`}>
             <div className="flex items-center gap-2 mb-2">
               <card.icon size={16} className={card.color} />
               <span className="text-xs text-tx-secondary">{card.label}</span>
@@ -190,15 +160,16 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
-
-      {/* 외부 API 위젯 - 환율 / 암호화폐 / 귀금속 */}
-      <ExternalDataWidget />
-
-      <div className="bg-bg-secondary rounded-xl border border-border p-5 mb-8">
+    ),
+    market: (
+      <div key="market">
+        <ExternalDataWidget />
+      </div>
+    ),
+    chart: (
+      <div key="chart" className="bg-bg-secondary rounded-xl border border-border p-5 mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-tx-secondary">
-            최근 6개월 수입·지출 추이
-          </h2>
+          <h2 className="text-sm font-medium text-tx-secondary">최근 6개월 수입·지출 추이</h2>
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-income" /> 수입
@@ -212,8 +183,9 @@ export default function DashboardPage() {
           <Line data={chartData} options={chartOptions as never} />
         </div>
       </div>
-
-      <div className="bg-bg-secondary rounded-xl border border-border">
+    ),
+    recent: (
+      <div key="recent" className="bg-bg-secondary rounded-xl border border-border mb-8">
         <div className="px-5 py-4 border-b border-border">
           <h2 className="text-sm font-medium text-tx-secondary">최근 내역</h2>
         </div>
@@ -239,27 +211,71 @@ export default function DashboardPage() {
                     {tx.category.name.charAt(0)}
                   </div>
                   <div>
-                    <p className="text-sm font-medium">
-                      {tx.memo || tx.category.name}
-                    </p>
+                    <p className="text-sm font-medium">{tx.memo || tx.category.name}</p>
                     <p className="text-xs text-tx-tertiary">
                       {formatDate(tx.date)} · {tx.category.name}
                     </p>
                   </div>
                 </div>
-                <p
-                  className={`text-sm font-medium ${
-                    tx.type === "income" ? "text-income" : "text-expense"
-                  }`}
-                >
-                  {tx.type === "income" ? "+" : "-"}
-                  {formatCurrency(tx.amount)}
+                <p className={`text-sm font-medium ${tx.type === "income" ? "text-income" : "text-expense"}`}>
+                  {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
                 </p>
               </div>
             ))}
           </div>
         )}
       </div>
+    ),
+  };
+
+  if (loading || !loaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-pulse text-tx-tertiary">불러오는 중...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 md:px-8 py-8">
+
+      {/* 헤더 */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="font-display text-3xl italic text-tx-primary">Dashboard</h1>
+          <p className="text-sm text-tx-tertiary mt-1">한눈에 보는 재정 현황</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <WidgetCustomizer
+            widgets={widgets}
+            onToggle={toggleWidget}
+            onMove={moveWidget}
+            onReset={resetWidgets}
+          />
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 bg-accent text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus size={16} />
+            내역 추가
+          </button>
+        </div>
+      </div>
+
+      {/* 기간 필터 */}
+      <div className="mb-6">
+        <PeriodSelector
+          period={period}
+          reference={reference}
+          onPeriodChange={setPeriod}
+          onReferenceChange={setReference}
+        />
+      </div>
+
+      {/* 위젯 렌더링 - 순서 및 표시 여부 적용 */}
+      {widgets
+        .filter((w) => w.visible)
+        .map((w) => widgetMap[w.id])}
 
       <TransactionModal
         open={modalOpen}
