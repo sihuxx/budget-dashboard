@@ -11,6 +11,7 @@ import {
   Sun,
   Monitor,
   LogOut,
+  TrendingUp,
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useSession, signOut } from "next-auth/react";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/transactions", label: "내역", icon: ListPlus },
   { href: "/analysis", label: "분석", icon: PieChart },
   { href: "/budget", label: "예산", icon: Target },
+  { href: "/market", label: "마켓", icon: TrendingUp },
 ];
 
 export default function Sidebar() {
