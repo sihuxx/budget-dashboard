@@ -14,6 +14,7 @@ import {
 import { Line } from "react-chartjs-2";
 import PeriodSelector from "@/components/PeriodSelector";
 import TransactionModal from "@/components/TransactionModal";
+import ExternalDataWidget from "@/components/ExternalDataWidget";
 import { getPeriodRange, formatCurrency, formatDate } from "@/lib/date-utils";
 import type { PeriodFilter, DashboardSummary, CategoryData, TransactionData } from "@/lib/types";
 import { useTheme } from "@/components/ThemeProvider";
@@ -189,6 +190,9 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* 외부 API 위젯 - 환율 / 암호화폐 / 귀금속 */}
+      <ExternalDataWidget />
 
       <div className="bg-bg-secondary rounded-xl border border-border p-5 mb-8">
         <div className="flex items-center justify-between mb-4">
